@@ -96,6 +96,30 @@ class VA_Avatar_Handler {
         
         // Remove Gravatar.com references
         add_filter('user_profile_picture_description', array($this, 'remove_gravatar_references'));
+        
+        // Add data attributes to avatar HTML for JavaScript targeting
+        add_filter('get_avatar', array($this, 'add_avatar_data_attributes'), 99, 5);
+    }
+    
+    /**
+     * Add data attributes to avatar HTML for JavaScript targeting.
+     *
+     * @param string $avatar      Avatar HTML.
+     * @param mixed  $id_or_email User ID, email, or comment object.
+     * @param int    $size        Avatar size.
+     * @param string $default     Default avatar URL.
+     * @param string $alt         Alt text.
+     * @return string Modified avatar HTML.
+     */
+    public function add_avatar_data_attributes($avatar, $id_or_email, $size, $default, $alt) {
+        $user_id = $this->get_user_id($id_or_email);
+        
+        if ($user_id) {
+            // Add data-user-id attribute to all avatar images for easier JS targeting
+            $avatar = preg_replace('/class=[\'"]([^\'"]*)[\'"]/', 'class="$1" data-user-id="' . esc_attr($user_id) . '"', $avatar);
+        }
+        
+        return $avatar;
     }
     
     /**
@@ -106,7 +130,7 @@ class VA_Avatar_Handler {
      */
     public function remove_gravatar_references($description) {
         // Simple replacement to remove Gravatar references
-        return __('Upload your own avatar below.', 'virtual-authors');
+        return __('Click on your avatar to upload or change it. You can also drag and drop or paste an image.', 'virtual-authors');
     }
     
     /**
@@ -159,9 +183,15 @@ class VA_Avatar_Handler {
             }
         }
         
-        // Create HTML for the avatar with data-user attribute for JavaScript targeting
+        // Add timestamp to URL to prevent caching
+        $timestamp = get_user_meta($user_id, 'va_avatar_timestamp', true);
+        if ($timestamp) {
+            $avatar_url = add_query_arg('t', $timestamp, $avatar_url);
+        }
+        
+        // Create HTML for the avatar with data-user-id attribute for JavaScript targeting
         $html = sprintf(
-            '<img alt="%s" src="%s" class="avatar avatar-%d photo va-avatar" height="%d" width="%d" loading="lazy" data-user="%d" />',
+            '<img alt="%s" src="%s" class="avatar avatar-%d photo va-avatar" height="%d" width="%d" loading="lazy" data-user-id="%d" />',
             esc_attr($alt),
             esc_url($avatar_url),
             esc_attr($size),
@@ -188,6 +218,11 @@ class VA_Avatar_Handler {
         if ($user_id) {
             $avatar_url = $this->get_avatar_url_for_user($user_id);
             if ($avatar_url) {
+                // Add timestamp to URL to prevent caching
+                $timestamp = get_user_meta($user_id, 'va_avatar_timestamp', true);
+                if ($timestamp) {
+                    $avatar_url = add_query_arg('t', $timestamp, $avatar_url);
+                }
                 return $avatar_url;
             }
         }
@@ -220,18 +255,17 @@ class VA_Avatar_Handler {
                     <label><?php _e('Avatar', 'virtual-authors'); ?></label>
                 </th>
                 <td>
-                    <div class="va-avatar-preview" style="margin-bottom: 15px;">
-                        <?php echo get_avatar($user->ID, 96); ?>
-                    </div>
-                    
-                    <div class="va-avatar-upload" id="va-profile-avatar-upload">
-                        <div class="va-avatar-preview"></div>
-                        <input type="file" name="va_avatar_file" id="va-avatar-file" accept="image/jpeg,image/png,image/gif" />
+                    <div class="va-avatar-upload" id="va-profile-avatar-upload" data-user-id="<?php echo esc_attr($user->ID); ?>">
+                        <div class="va-avatar-preview">
+                            <?php echo get_avatar($user->ID, 96); ?>
+                        </div>
+                        <input type="hidden" name="va_avatar_file_processed" id="va-avatar-file-processed" value="0" />
+                        <input type="file" name="va_avatar_file" id="va-avatar-file" accept="image/jpeg,image/png,image/gif" style="display:none;" />
                         <p class="description">
-                            <?php _e('Upload a custom avatar. Supported formats: JPEG, PNG, GIF.', 'virtual-authors'); ?>
+                            <?php _e('Click on your avatar to change it. Supported formats: JPEG, PNG, GIF.', 'virtual-authors'); ?>
                         </p>
                         <p class="description">
-                            <?php _e('You can also drag and drop or paste an image.', 'virtual-authors'); ?>
+                            <?php _e('You can also drag and drop an image onto your avatar.', 'virtual-authors'); ?>
                         </p>
                     </div>
                     
@@ -246,6 +280,67 @@ class VA_Avatar_Handler {
                 </td>
             </tr>
         </table>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                // Make avatar clickable
+                $('.va-avatar-preview').on('click', function() {
+                    $('#va-avatar-file').trigger('click');
+                });
+                
+                // Handle file selection
+                $('#va-avatar-file').on('change', function() {
+                    const file = this.files[0];
+                    if (!file) return;
+                    
+                    // Validate file type
+                    if (!file.type.match('image.*')) {
+                        alert('<?php echo esc_js(__('Please select an image file (JPEG, PNG, or GIF).', 'virtual-authors')); ?>');
+                        return;
+                    }
+                    
+                    // Mark as processed for form submission
+                    $('#va-avatar-file-processed').val('1');
+                    
+                    // Show preview immediately
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('.va-avatar-preview img').attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                // Handle drag and drop
+                $('.va-avatar-preview').on('dragover dragenter', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $(this).addClass('va-avatar-drag-hover');
+                }).on('dragleave dragend drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $(this).removeClass('va-avatar-drag-hover');
+                    
+                    if (e.type === 'drop') {
+                        const dt = e.originalEvent.dataTransfer;
+                        if (dt && dt.files && dt.files.length) {
+                            const file = dt.files[0];
+                            
+                            // Validate it's an image
+                            if (!file.type.match('image.*')) {
+                                alert('<?php echo esc_js(__('Please select an image file (JPEG, PNG, or GIF).', 'virtual-authors')); ?>');
+                                return;
+                            }
+                            
+                            // Add file to input
+                            const fileInput = $('#va-avatar-file')[0];
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            fileInput.files = dataTransfer.files;
+                            $('#va-avatar-file').trigger('change');
+                        }
+                    }
+                });
+            });
+        </script>
         <?php
     }
     
@@ -387,67 +482,164 @@ class VA_Avatar_Handler {
         $slug = get_user_meta($user_id, 'va_author_slug', true);
         $slug = !empty($slug) ? $slug : $user->user_nicename;
         
-        // Get timestamp for cache busting
-        $timestamp = get_user_meta($user_id, 'va_avatar_timestamp', true);
-        $timestamp = !empty($timestamp) ? $timestamp : time();
-        
-        // Return clean URL with timestamp
-        return home_url("/author-avatar/{$slug}") . '?t=' . $timestamp;
+        // Return clean URL (timestamp added elsewhere)
+        return home_url("/author-avatar/{$slug}");
     }
     
-    /**
-     * Ajax handler for avatar upload.
-     */
-    public function ajax_upload_avatar() {
-        // Check nonce
-        check_ajax_referer('va_nonce', 'nonce');
+/**
+ * Ajax handler for avatar upload.
+ */
+public function ajax_upload_avatar() {
+    // Log debugging information
+    error_log('VA Debug: Starting avatar upload');
+    
+    // Check nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'va_nonce')) {
+        error_log('VA Debug: Nonce verification failed');
+        error_log('VA Debug: Received nonce: ' . (isset($_POST['nonce']) ? $_POST['nonce'] : 'not set'));
+        wp_send_json_error(array('message' => __('Security check failed', 'virtual-authors')));
+        return;
+    }
+    
+    // Check permissions
+    if (!current_user_can('upload_files')) {
+        error_log('VA Debug: Permission denied');
+        wp_send_json_error(array('message' => __('Permission denied', 'virtual-authors')));
+        return;
+    }
+    
+    // Check for user ID
+    if (!isset($_POST['user_id']) || !is_numeric($_POST['user_id'])) {
+        error_log('VA Debug: Invalid user ID');
+        error_log('VA Debug: Received user_id: ' . (isset($_POST['user_id']) ? $_POST['user_id'] : 'not set'));
+        wp_send_json_error(array('message' => __('Invalid user ID', 'virtual-authors')));
+        return;
+    }
+    
+    $user_id = intval($_POST['user_id']);
+    $user = get_userdata($user_id);
+    
+    if (!$user) {
+        error_log('VA Debug: User not found');
+        wp_send_json_error(array('message' => __('User not found', 'virtual-authors')));
+        return;
+    }
+    
+    // Check if the file is being properly uploaded
+    error_log('VA Debug: $_FILES = ' . print_r($_FILES, true));
+    
+    // Fix for malformed file uploads
+    if (!isset($_FILES['avatar_file'])) {
+        // Check if files were uploaded but with a different key
+        $file_keys = array_keys($_FILES);
+        error_log('VA Debug: Available file keys: ' . implode(', ', $file_keys));
         
-        // Check permissions
-        if (!current_user_can('upload_files')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'virtual-authors')));
-            return;
-        }
-        
-        // Check for user ID
-        if (!isset($_POST['user_id']) || !is_numeric($_POST['user_id'])) {
-            wp_send_json_error(array('message' => __('Invalid user ID', 'virtual-authors')));
-            return;
-        }
-        
-        $user_id = intval($_POST['user_id']);
-        $user = get_userdata($user_id);
-        
-        if (!$user) {
-            wp_send_json_error(array('message' => __('User not found', 'virtual-authors')));
-            return;
-        }
-        
-        // Check for file
-        if (!isset($_FILES['avatar_file']) || empty($_FILES['avatar_file']['tmp_name'])) {
+        if (!empty($file_keys)) {
+            // Use the first available file since there's no avatar_file
+            $first_key = $file_keys[0];
+            error_log('VA Debug: Using alternative file key: ' . $first_key);
+            
+            // Only proceed if the file appears valid
+            if (isset($_FILES[$first_key]['tmp_name']) && !empty($_FILES[$first_key]['tmp_name'])) {
+                $file = $_FILES[$first_key];
+                error_log('VA Debug: Using alternative file: ' . print_r($file, true));
+            } else {
+                error_log('VA Debug: Alternative file key exists but file is invalid');
+                wp_send_json_error(array('message' => __('Invalid file upload', 'virtual-authors')));
+                return;
+            }
+        } else {
+            error_log('VA Debug: No files found in upload');
             wp_send_json_error(array('message' => __('No file uploaded', 'virtual-authors')));
             return;
         }
-        
-        // Process the upload
-        $result = $this->process_avatar_upload($_FILES['avatar_file'], $user);
-        
-        if (is_wp_error($result)) {
-            wp_send_json_error(array('message' => $result->get_error_message()));
-            return;
-        }
-        
-        // Clear any caches
-        clean_user_cache($user_id);
-        
-        // Add a timestamp for cache busting
-        update_user_meta($user_id, 'va_avatar_timestamp', time());
-        
-        wp_send_json_success(array(
-            'url' => $this->get_avatar_url_for_user($user_id),
-            'avatar_html' => get_avatar($user_id, 96)
-        ));
+    } else {
+        $file = $_FILES['avatar_file'];
+        error_log('VA Debug: avatar_file found: ' . print_r($file, true));
     }
     
+    // Check for empty upload
+    if (empty($file['tmp_name'])) {
+        error_log('VA Debug: Empty file upload');
+        wp_send_json_error(array('message' => __('Empty file uploaded', 'virtual-authors')));
+        return;
+    }
+    
+    // Make sure the upload directory exists
+    $this->ensure_avatar_directory();
+    
+    // Prepare to manually handle the upload if wp_handle_upload is failing
+    $upload_dir = wp_upload_dir();
+    $avatar_dir = trailingslashit($upload_dir['basedir']) . VA_AVATAR_DIR_NAME;
+    
+    // Generate filename
+    $slug = get_user_meta($user->ID, 'va_author_slug', true);
+    $slug = !empty($slug) ? $slug : $user->user_login;
+    $slug = sanitize_title($slug);
+    $random_suffix = substr(md5(time() . rand()), 0, 8);
+    $file_info = pathinfo($file['name']);
+    $extension = strtolower($file_info['extension']);
+    
+    // Validate file type
+    $allowed_types = array('jpg', 'jpeg', 'png', 'gif');
+    if (!in_array($extension, $allowed_types)) {
+        error_log('VA Debug: Invalid file type: ' . $extension);
+        wp_send_json_error(array('message' => __('Invalid file type. Please upload a JPG, PNG, or GIF image.', 'virtual-authors')));
+        return;
+    }
+    
+    $filename = $slug . '-' . $random_suffix . '.' . $extension;
+    $target_path = $avatar_dir . '/' . $filename;
+    
+    error_log('VA Debug: Target path: ' . $target_path);
+    
+    // Try to move the uploaded file
+    if (move_uploaded_file($file['tmp_name'], $target_path)) {
+        error_log('VA Debug: File successfully moved to: ' . $target_path);
+        
+        // Set proper permissions
+        @chmod($target_path, 0644);
+        
+        // Delete previous avatar file
+        $this->remove_avatar_file($user->ID);
+        
+        // Set the relative path (to save in metadata)
+        $relative_path = VA_AVATAR_DIR_NAME . '/' . $filename;
+        
+        // Update user meta
+        update_user_meta($user->ID, 'va_avatar_path', $relative_path);
+        $timestamp = time();
+        update_user_meta($user->ID, 'va_avatar_timestamp', $timestamp);
+        
+        // Clear any caches
+        clean_user_cache($user->ID);
+        
+        // Generate avatar URL
+        $avatar_url = $this->get_avatar_url_for_user($user->ID);
+        
+        error_log('VA Debug: Avatar URL: ' . $avatar_url);
+        
+        // Return success with URL
+        wp_send_json_success(array(
+            'url' => $avatar_url,
+            'avatar_html' => get_avatar($user->ID, 96)
+        ));
+    } else {
+        error_log('VA Debug: Failed to move uploaded file from ' . $file['tmp_name'] . ' to ' . $target_path);
+        
+        // Check if temp file exists
+        if (!file_exists($file['tmp_name'])) {
+            error_log('VA Debug: Temp file does not exist: ' . $file['tmp_name']);
+        }
+        
+        // Check if target directory is writable
+        if (!is_writable($avatar_dir)) {
+            error_log('VA Debug: Target directory is not writable: ' . $avatar_dir);
+        }
+        
+        wp_send_json_error(array('message' => __('Failed to process the uploaded file. Please try again.', 'virtual-authors')));
+    }
+}    
     /**
      * Process avatar upload.
      *
@@ -461,19 +653,21 @@ class VA_Avatar_Handler {
         }
         
         // Make sure upload directory exists
-        if (!file_exists($this->avatar_dir)) {
-            wp_mkdir_p($this->avatar_dir);
-        }
+        $this->ensure_avatar_directory();
         
         // Check for file errors
         if ($file['error'] != UPLOAD_ERR_OK) {
             $error_message = $this->get_upload_error_message($file['error']);
+            error_log('VA Debug: File upload error: ' . $error_message);
             return new WP_Error('upload_error', $error_message);
         }
         
         // Verify the file is an image
         $file_type = wp_check_filetype($file['name']);
+        error_log('VA Debug: File type check: ' . print_r($file_type, true));
+        
         if (!$file_type['type'] || !preg_match('/(jpeg|jpg|png|gif)$/i', $file_type['ext'])) {
+            error_log('VA Debug: Invalid file type');
             return new WP_Error('invalid_file', __('Invalid file type. Please upload a JPG, PNG, or GIF image.', 'virtual-authors'));
         }
         
@@ -483,9 +677,11 @@ class VA_Avatar_Handler {
         $slug = sanitize_title($slug);
         
         // Add random suffix to prevent caching issues
-        $random_suffix = substr(md5(time()), 0, 6);
+        $random_suffix = substr(md5(time() . rand()), 0, 8);
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = $slug . '-' . $random_suffix . '.' . $extension;
+        
+        error_log('VA Debug: Generated filename: ' . $filename);
         
         // Prepare upload overrides
         $override = array(
@@ -505,12 +701,15 @@ class VA_Avatar_Handler {
             'error' => false
         );
         
+        error_log('VA Debug: Custom upload dir: ' . print_r($custom_upload_dir, true));
+        
         // Use a custom upload location
         add_filter('upload_dir', function() use ($custom_upload_dir) {
             return $custom_upload_dir;
         });
         
         // Upload the file
+        error_log('VA Debug: About to call wp_handle_upload');
         $uploadedfile = wp_handle_upload($file, $override);
         
         // Remove our custom upload dir filter
@@ -518,8 +717,12 @@ class VA_Avatar_Handler {
         
         if (!$uploadedfile || isset($uploadedfile['error'])) {
             $error_message = isset($uploadedfile['error']) ? $uploadedfile['error'] : __('Unknown upload error', 'virtual-authors');
+            error_log('VA Debug: wp_handle_upload error: ' . $error_message);
+            error_log('VA Debug: wp_handle_upload result: ' . print_r($uploadedfile, true));
             return new WP_Error('upload_error', $error_message);
         }
+        
+        error_log('VA Debug: wp_handle_upload success: ' . print_r($uploadedfile, true));
         
         // Get the relative path (to save in metadata)
         $relative_path = VA_AVATAR_DIR_NAME . '/' . $filename;
@@ -534,7 +737,49 @@ class VA_Avatar_Handler {
         // Clear any caches
         clean_user_cache($user->ID);
         
+        error_log('VA Debug: Avatar successfully processed and saved to ' . $relative_path);
+        
         return true;
+    }
+    
+    /**
+     * Ensure avatar directory exists with proper permissions.
+     */
+    private function ensure_avatar_directory() {
+        $upload_dir = wp_upload_dir();
+        $avatar_dir = trailingslashit($upload_dir['basedir']) . VA_AVATAR_DIR_NAME;
+        
+        error_log('VA Debug: Avatar directory path: ' . $avatar_dir);
+        
+        if (!file_exists($avatar_dir)) {
+            $result = wp_mkdir_p($avatar_dir);
+            error_log('VA Debug: Directory created: ' . ($result ? 'Yes' : 'No'));
+            
+            if ($result) {
+                // Add index.php file to prevent directory listing
+                @file_put_contents($avatar_dir . '/index.php', '<?php // Silence is golden');
+                
+                // Set proper permissions
+                @chmod($avatar_dir, 0755);
+                
+                // Test write permissions
+                $test_file = $avatar_dir . '/test.txt';
+                $write_test = @file_put_contents($test_file, 'test');
+                error_log('VA Debug: Write test: ' . ($write_test ? 'Success' : 'Failed'));
+                if ($write_test) {
+                    @unlink($test_file);
+                }
+            }
+        } else {
+            error_log('VA Debug: Directory exists');
+            // Test write permissions
+            $test_file = $avatar_dir . '/test.txt';
+            $write_test = @file_put_contents($test_file, 'test');
+            error_log('VA Debug: Write test: ' . ($write_test ? 'Success' : 'Failed'));
+            if ($write_test) {
+                @unlink($test_file);
+            }
+        }
     }
     
     /**
@@ -578,11 +823,18 @@ class VA_Avatar_Handler {
             $upload_dir = wp_upload_dir();
             $full_path = trailingslashit($upload_dir['basedir']) . $avatar_path;
             
+            error_log('VA Debug: Removing avatar file: ' . $full_path);
+            
             // Delete the file if it exists
             if (file_exists($full_path)) {
-                @unlink($full_path);
-                return true;
+                $result = @unlink($full_path);
+                error_log('VA Debug: File deletion ' . ($result ? 'successful' : 'failed'));
+                return $result;
+            } else {
+                error_log('VA Debug: File not found for deletion');
             }
+        } else {
+            error_log('VA Debug: No avatar path found for user ID ' . $user_id);
         }
         
         return false;
@@ -616,7 +868,47 @@ class VA_Avatar_Handler {
     public function delete_avatar($user_id) {
         $this->remove_avatar($user_id);
     }
+    
+    /**
+     * Get custom avatar HTML.
+     * Helper method to create the avatar HTML directly.
+     *
+     * @param int|string $id_or_email User ID or email.
+     * @param string     $alt         Alternative text.
+     * @param int        $size        Avatar size in pixels.
+     * @return string Avatar HTML.
+     */
+    public function get_custom_avatar($id_or_email, $alt = '', $size = 96) {
+        // Get user ID from email or ID
+        $user_id = $this->get_user_id($id_or_email);
+        
+        // Get avatar URL
+        if ($user_id) {
+            $avatar_url = $this->get_avatar_url_for_user($user_id);
+            if (!$avatar_url) {
+                $avatar_url = $this->get_default_avatar_url();
+            }
+            
+            // Add timestamp for cache busting
+            $timestamp = get_user_meta($user_id, 'va_avatar_timestamp', true);
+            if ($timestamp) {
+                $avatar_url = add_query_arg('t', $timestamp, $avatar_url);
+            }
+        } else {
+            $avatar_url = $this->get_default_avatar_url();
+        }
+        
+        // Generate HTML
+        $html = sprintf(
+            '<img alt="%s" src="%s" class="avatar avatar-%d photo va-avatar" height="%d" width="%d" loading="lazy" %s />',
+            esc_attr($alt),
+            esc_url($avatar_url),
+            esc_attr($size),
+            esc_attr($size),
+            esc_attr($size),
+            $user_id ? 'data-user-id="' . esc_attr($user_id) . '"' : ''
+        );
+        
+        return $html;
+    }
 }
-
-// Initialize the Avatar Handler
-VA_Avatar_Handler::get_instance();
