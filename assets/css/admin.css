@@ -1,0 +1,275 @@
+/**
+ * Virtual Authors - Admin Styles
+ *
+ * CSS for the admin interface elements.
+ * Updated with interactive avatar styles.
+ *
+ * @package Virtual_Authors
+ * @author Tim Hosking (https://github.com/Munger)
+ */
+
+/* Author panel styling in post editor */
+.va-author-panel {
+  margin: 1rem 0;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e4e7;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* Author controls at the top - removed to simplify layout */
+.va-author-controls {
+  display: none;
+}
+
+/* Create button positioning */
+.va-create-button {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+}
+
+/* Remove the separator completely */
+.va-separator {
+  display: none;
+}
+
+/* Author info section */
+.va-author-info {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.va-author-details {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Interactive avatar styling */
+.va-avatar-interactive {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.va-avatar-interactive img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.va-avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.va-avatar-interactive:hover .va-avatar-overlay {
+  opacity: 1;
+}
+
+.va-avatar-interactive:hover img {
+  border-color: #0073aa;
+  box-shadow: 0 0 0 1px #0073aa;
+  filter: brightness(0.9);
+}
+
+/* Smaller overlay for table view */
+.va-avatar-overlay-mini {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 9px;
+  text-align: center;
+  padding: 2px 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.va-avatar-interactive:hover .va-avatar-overlay-mini {
+  opacity: 1;
+}
+
+/* Author meta */
+.va-author-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.va-author-name {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.va-virtual-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #e7f5fa;
+  color: #0073aa;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  margin-bottom: 0.75rem;
+}
+
+.va-virtual-badge .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+}
+
+/* Forms styling */
+.va-form-field {
+  margin-bottom: 1rem;
+}
+
+.va-form-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.va-slug-field {
+  margin-bottom: 0.75rem;
+}
+
+.va-slug-field input {
+  width: 100%;
+  max-width: 300px;
+}
+
+.va-bio-field {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.va-bio-field textarea {
+  width: 100%;
+  min-height: 150px;
+}
+
+.va-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.inline-edit-buttons {
+  margin-top: 0.75rem;
+}
+
+/* Author edit container */
+.va-author-edit-container {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  border: 1px solid #eee;
+  width: 100%;
+}
+
+/* Button states */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Added helpful info message for author selection */
+.va-author-info-message {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8f8f8;
+  border-left: 4px solid #0073aa;
+}
+
+/* Create author form - simplified with better spacing */
+.va-create-author-form {
+  background: #f9f9f9;
+  padding: 1.25rem;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  margin-top: 1rem;
+}
+
+.va-create-author-form h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+  .va-create-button {
+    position: static;
+    margin-bottom: 1rem;
+    text-align: right;
+  }
+  
+  .va-avatar-interactive {
+    margin: 0 auto 1rem;
+  }
+
+  .va-slug-field input {
+    max-width: 100%;
+  }
+}
+
+/* Dark mode support */
+body.admin-color-dark .va-virtual-badge {
+  background: #2c3338;
+  color: #33b3db;
+}
+
+body.admin-color-dark .va-avatar-edit::after {
+  background: #2c3338;
+  color: #dcdcde;
+}
+
+body.admin-color-dark .va-author-edit-container {
+  background: #32373c;
+  border-color: #3c434a;
+}
+
+body.admin-color-dark .va-create-author-form {
+  background: #32373c;
+  border-color: #3c434a;
+}
+
+body.admin-color-dark .va-separator {
+  border-color: #3c434a;
+}
+
+body.admin-color-dark .va-author-info-message {
+  background: #2c3338;
+  border-left-color: #33b3db;
+}

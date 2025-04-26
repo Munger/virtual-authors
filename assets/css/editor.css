@@ -1,0 +1,328 @@
+/**
+ * Virtual Authors - Editor Styles
+ *
+ * @package Virtual_Authors
+ * @author Tim Hosking (https://github.com/Munger)
+ */
+
+/* Base panel styles */
+.va-author-panel {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e4e7;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative; /* For absolute positioning of create button */
+}
+
+.va-author-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.va-author-panel-content {
+  margin-top: 1rem;
+}
+
+.va-author-panel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Author selection message */
+.va-author-selection-info {
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #666;
+  background: #f9f9f9;
+  padding: 0.75rem;
+  border-left: 3px solid #0073aa;
+  font-size: 0.9em;
+}
+
+/* Create author button styling */
+.va-author-controls {
+  width: 100%;
+}
+
+/* Create button positioning */
+.va-create-button {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+}
+
+/* Notice styling */
+.va-author-panel .notice {
+  margin: 0 0 1rem;
+  padding: 10px;
+}
+
+/* Author details section */
+.va-author-details {
+  flex: 1;
+  width: 100%;
+  margin-top: 1rem; /* Space after the create button */
+}
+
+.va-author-name {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e1e1e;
+}
+
+/* Avatar section - improved styling for avatar and caption */
+.va-author-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f0f0f0;
+  flex-shrink: 0;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.va-author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.va-avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 0;
+  border-radius: 0 0 48px 48px;
+  opacity: 1; /* Always visible */
+  width: 96px; /* Match avatar width */
+}
+
+/* Slug field with reasonable width */
+.va-slug-field {
+  margin-bottom: 0.75rem;
+}
+
+.va-slug-field input {
+  width: 100%;
+  max-width: 300px; /* Reasonable width for slug field */
+}
+
+/* Bio field modifications for full width */
+.va-bio-field {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.va-bio-field textarea {
+  width: 100%;
+  min-height: 150px;
+}
+
+/* Rich text editor enhancements */
+.va-bio-editor {
+  position: relative;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.va-rich-text-editor {
+  border: 1px solid #e2e4e7;
+  border-radius: 2px;
+  padding: 16px;
+  min-height: 150px;
+  background: #fff;
+  width: 100%;
+}
+
+/* Important: This ensures the toolbar appears correctly */
+.va-bio-editor .components-toolbar {
+  position: static;
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  border: 1px solid #e2e4e7;
+  border-bottom: none;
+  padding: 4px;
+  background: #f8f9f9;
+  width: 100%;
+}
+
+.va-bio-content {
+  min-height: 150px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  width: 100%;
+}
+
+/* Text alignment options */
+.va-bio-content.alignleft {
+  text-align: left;
+}
+
+.va-bio-content.aligncenter {
+  text-align: center;
+}
+
+.va-bio-content.alignright {
+  text-align: right;
+}
+
+/* Rich text content formatting */
+.va-bio-content h2 {
+  margin: 1em 0 0.5em;
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.va-bio-content p {
+  margin: 0 0 1em;
+}
+
+.va-bio-content ul,
+.va-bio-content ol {
+  margin: 0 0 1em 1.5em;
+  padding: 0;
+}
+
+.va-bio-content li {
+  margin-bottom: 0.5em;
+}
+
+.va-bio-content a {
+  color: #0073aa;
+  text-decoration: underline;
+}
+
+.va-bio-content a:hover {
+  color: #006799;
+}
+
+/* Form styling */
+.va-form-row {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.va-form-row label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+/* Reasonable width for slug inputs */
+.va-form-row input[type="text"].va-slug-input {
+  max-width: 300px;
+}
+
+.va-form-row textarea {
+  width: 100%;
+}
+
+.va-form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+/* Avatar upload styling */
+.va-avatar-dropzone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f9f9f9;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.va-avatar-dropzone:hover,
+.va-avatar-dropzone.active {
+  border-color: #0073aa;
+  background: #f0f7fb;
+}
+
+.va-upload-note {
+  font-size: 0.9em;
+  color: #666;
+  margin: 8px 0;
+}
+
+.va-avatar-preview {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.va-avatar-preview img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #eee;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Special styling for embedded toolbar */
+.va-bio-editor .block-editor-block-toolbar {
+  position: static;
+  margin-bottom: 8px;
+  border: 1px solid #e2e4e7;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  background: #f8f9f9;
+  width: 100%;
+}
+
+/* Ensure the whole component panel looks good in the post editor */
+.va-author-panel-wrapper {
+  margin: 2rem 0;
+  width: 100%;
+}
+
+/* Additional button styling for consistency */
+.va-bio-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+/* Media queries for responsiveness */
+@media screen and (max-width: 782px) {
+  .va-create-button {
+    position: static;
+    margin-bottom: 1rem;
+    text-align: right;
+  }
+  
+  .va-rich-text-editor {
+    padding: 12px;
+  }
+  
+  .va-bio-editor .components-toolbar {
+    flex-wrap: wrap;
+  }
+  
+  .va-slug-field input,
+  .va-form-row input[type="text"].va-slug-input {
+    max-width: 100%; /* Full width on small screens */
+  }
+}
